@@ -1,2 +1,0 @@
-# deeper
-Content Gallery app 
