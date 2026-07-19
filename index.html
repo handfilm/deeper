@@ -34,7 +34,12 @@
 </header>
 
 <!-- ================= DESKTOP (floating windows live here) ================= -->
-<main class="os-desktop" id="desktop"></main>
+<main class="os-desktop" id="desktop">
+  <div class="desktop-brand" aria-hidden="true">
+    <span class="db-raw">RAW<span class="db-x">X</span></span>
+    <span class="db-deeper">— DEEPER —</span>
+  </div>
+</main>
 
 <!-- ================= TASKBAR ================= -->
 <footer class="os-taskbar">
@@ -59,6 +64,7 @@
       <div class="lb-head-actions">
         <span id="lb-zoom-hint" class="lb-zoom-hint"></span>
         <span class="lb-key-legend">Z ZOOM · N/P NAV · TAB PAUSE · F FULLSCREEN</span>
+        <button id="lb-auto-btn" class="lb-icon-btn" title="Auto-advance slideshow">▶ AUTO</button>
         <button id="lb-fullscreen-btn" class="lb-icon-btn" title="Force fullscreen (F)">⛶ FULLSCREEN</button>
         <button id="lb-pin-btn" class="lb-icon-btn" title="Pin to board">PIN</button>
         <button id="lb-close" class="lb-icon-btn lb-close" title="Close">✕</button>
@@ -67,6 +73,17 @@
     <button class="lb-nav lb-prev" id="lb-prev" title="Previous (P)">‹</button>
     <div class="lb-media" id="lb-media"></div>
     <button class="lb-nav lb-next" id="lb-next" title="Next (N)">›</button>
+
+    <!-- Tap-only command dock — mobile: every desktop keyboard shortcut
+         (zoom, nav, fullscreen) gets a real tappable button here. -->
+    <div class="lb-mobile-dock" id="lb-mobile-dock">
+      <button class="lb-dock-btn" id="lb-dock-prev" title="Previous">‹</button>
+      <button class="lb-dock-btn" id="lb-dock-zoomout" title="Zoom out">−</button>
+      <button class="lb-dock-btn lb-dock-fs" id="lb-dock-fullscreen" title="Fullscreen">⛶</button>
+      <button class="lb-dock-btn" id="lb-dock-zoomin" title="Zoom in">+</button>
+      <button class="lb-dock-btn" id="lb-dock-next" title="Next">›</button>
+    </div>
+
     <div class="lb-meta">
       <div class="lb-meta-row"><span>ITEM</span><b id="lb-character">—</b></div>
       <div class="lb-meta-row"><span>LOCATION</span><b id="lb-pillar">—</b></div>
