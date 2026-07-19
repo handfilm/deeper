@@ -51,6 +51,23 @@ body { overflow: hidden; }
   background-blend-mode: normal;
 }
 
+/* ---------------- Big background branding ---------------- */
+.desktop-brand{
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; text-align: center;
+  pointer-events: none; user-select: none; z-index: 0;
+}
+.db-raw{
+  font-family: var(--font-display); font-weight: 900; text-transform: uppercase;
+  font-size: clamp(64px, 17vw, 260px); line-height: .85; letter-spacing: -.02em;
+  color: rgba(255,255,255,.035);
+}
+.db-raw .db-x{ color: rgba(255,0,0,.14); }
+.db-deeper{
+  font-family: var(--font-mono); font-size: clamp(10px, 1.6vw, 15px);
+  letter-spacing: .5em; color: rgba(255,255,255,.06); margin-top: clamp(4px, 1.2vw, 16px);
+}
+
 /* ---------------- Windows ---------------- */
 .win{
   position: absolute;
@@ -130,6 +147,15 @@ body { overflow: hidden; }
 .win-size-toggle button:last-child{ border-right: none; }
 .win-size-toggle button.active{ color: var(--white); background: rgba(255,255,255,.08); }
 
+/* INFO (names) toggle + SPEED (fast preview) toggle */
+.win-chip-btn{
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: .08em;
+  background: transparent; color: var(--steel-dim); border: 1px solid var(--panel-line);
+  padding: 6px 10px; cursor: pointer; white-space: nowrap;
+}
+.win-chip-btn:hover{ color: var(--white); border-color: var(--red); }
+.win-chip-btn.active{ color: var(--red); border-color: var(--red); background: rgba(255,0,0,.08); }
+
 .win-count{ font-size: 10px; letter-spacing: .08em; color: var(--steel-dim); margin-bottom: 10px; }
 .win-empty{ font-size: 11px; letter-spacing: .06em; color: var(--steel-dim); padding: 30px 4px; text-align: center; }
 
@@ -205,4 +231,12 @@ body { overflow: hidden; }
 @media (max-width: 680px){
   .win{ left: 8px !important; top: 8px !important; width: calc(100% - 16px) !important; height: calc(100% - 16px) !important; }
   .os-logo-full{ display: none; }
+  .win-grid.grid-size-s{ grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: .4rem; }
+  .win-grid.grid-size-m{ grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: .5rem; }
+  .win-grid.grid-size-l{ grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: .6rem; }
+  .win-toolbar{ gap: 6px; }
+  .win-search{ min-width: 70px; }
+  .win-btn{ width: 30px; height: 30px; }
+  .win-resize{ width: 24px; height: 24px; }
+  .db-deeper{ letter-spacing: .35em; }
 }
