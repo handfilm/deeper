@@ -633,7 +633,8 @@
   }
 
   /* ---------------- Lightbox (global, shared) ---------------- */
-  var lb = { win: null, index: -1 };
+  var ZOOM_MAX = 6, ZOOM_MIN = 1;
+  var lb = { win: null, index: -1, zoom: 1, panX: 0, panY: 0, dragging: false, dragSX: 0, dragSY: 0, dragOX: 0, dragOY: 0 };
 
   function openLightbox(w, fileId) {
     lb.win = w;
@@ -643,20 +644,48 @@
     document.getElementById('lightbox').classList.add('open');
     document.getElementById('lightbox').setAttribute('aria-hidden', 'false');
   }
+
+  function resetZoom() { lb.zoom = 1; lb.panX = 0; lb.panY = 0; applyZoomTransform(); }
+
+  function applyZoomTransform() {
+    var media = qs('#lb-media img, #lb-media video');
+    if (!media) return;
+    media.style.transform = 'translate(' + lb.panX + 'px,' + lb.panY + 'px) scale(' + lb.zoom + ')';
+    media.classList.toggle('lb-zoomed', lb.zoom > 1);
+    var hint = document.getElementById('lb-zoom-hint');
+    if (hint) hint.textContent = lb.zoom > 1 ? Math.round(lb.zoom * 100) + '%' : '';
+  }
+
+  function setZoom(next) {
+    next = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, next));
+    if (next === 1) { resetZoom(); return; }
+    lb.zoom = next;
+    var maxPan = 400 * (lb.zoom - 1);
+    lb.panX = Math.max(-maxPan, Math.min(maxPan, lb.panX));
+    lb.panY = Math.max(-maxPan, Math.min(maxPan, lb.panY));
+    applyZoomTransform();
+  }
+
+  // Z key cycles: fit -> 2x -> 4x -> fit
+  function toggleZoomKey() {
+    if (lb.zoom < 1.9) setZoom(2);
+    else if (lb.zoom < 3.9) setZoom(4);
+    else resetZoom();
+  }
+
   function renderLightbox() {
     var w = lb.win;
     var p = w.filtered[lb.index];
     if (!p) return;
     var stage = document.getElementById('lb-media');
-    var fsBtn = document.getElementById('lb-fullscreen-btn');
 
     if (p.isVideo) {
       stage.innerHTML = '<video id="lb-video" src="' + p.streamSrc + '" poster="' + p.poster + '" controls autoplay loop playsinline></video>';
-      fsBtn.hidden = false;
     } else {
       stage.innerHTML = '<img src="' + p.full + '" alt="' + escapeAttr(p.title) + '">';
-      fsBtn.hidden = true;
     }
+    resetZoom();
+
     document.getElementById('lb-title').textContent = p.title.toUpperCase() + ' \u2014 ' + (lb.index + 1) + ' / ' + w.filtered.length;
     document.getElementById('lb-character').textContent = p.title;
     document.getElementById('lb-pillar').textContent = w.catName + (w.tagName ? ' / ' + w.tagName : '');
@@ -665,17 +694,47 @@
     pinBtn.classList.toggle('pinned', isPinned(p));
     pinBtn.textContent = isPinned(p) ? 'PINNED' : 'PIN';
   }
+
   function closeLightbox() {
+    if (document.fullscreenElement) document.exitFullscreen().catch(function () {});
     document.getElementById('lightbox').classList.remove('open');
     document.getElementById('lightbox').setAttribute('aria-hidden', 'true');
     document.getElementById('lb-media').innerHTML = '';
     lb.win = null; lb.index = -1;
   }
+
   function lbStep(dir) {
     if (!lb.win || !lb.win.filtered.length) return;
     lb.index = (lb.index + dir + lb.win.filtered.length) % lb.win.filtered.length;
     renderLightbox();
   }
+
+  function lbTogglePlay() {
+    var v = document.getElementById('lb-video');
+    if (!v) return;
+    if (v.paused) v.play().catch(function () {}); else v.pause();
+  }
+
+  // F: force-fullscreen the whole lightbox frame (works for image or video
+  // alike), and CSS strips chrome down to just media + prev/next while active.
+  function toggleForceFullscreen() {
+    var frame = document.getElementById('lb-frame');
+    if (!document.fullscreenElement) {
+      var req = frame.requestFullscreen || frame.webkitRequestFullscreen;
+      if (req) req.call(frame).catch(function () {});
+    } else {
+      document.exitFullscreen().catch(function () {});
+    }
+  }
+
+  ['fullscreenchange', 'webkitfullscreenchange'].forEach(function (evt) {
+    document.addEventListener(evt, function () {
+      var isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+      document.getElementById('lightbox').classList.toggle('lb-fullscreen-mode', isFs);
+      var v = document.getElementById('lb-video');
+      if (v) v.play().catch(function () {});
+    });
+  });
 
   /* ---------------- Board / Inquiry modal ---------------- */
   function renderBoard() {
@@ -708,12 +767,33 @@
       renderLightbox();
     });
     document.getElementById('lightbox').addEventListener('click', function (e) { if (e.target.id === 'lightbox') closeLightbox(); });
-    document.getElementById('lb-fullscreen-btn').addEventListener('click', function () {
-      var vid = document.getElementById('lb-video');
-      if (!vid) return;
-      var req = vid.requestFullscreen || vid.webkitRequestFullscreen || vid.webkitEnterFullscreen;
-      if (req) req.call(vid);
+    document.getElementById('lb-fullscreen-btn').addEventListener('click', toggleForceFullscreen);
+
+    // ---- Zoom: wheel to zoom in/out around the cursor, drag to pan while zoomed ----
+    var stage = document.getElementById('lb-media');
+    stage.addEventListener('wheel', function (e) {
+      var media = qs('#lb-media img, #lb-media video');
+      if (!media) return;
+      e.preventDefault();
+      var delta = e.deltaY < 0 ? 0.5 : -0.5;
+      setZoom(lb.zoom + delta);
+    }, { passive: false });
+
+    stage.addEventListener('mousedown', function (e) {
+      if (lb.zoom <= 1 || e.target.tagName === 'BUTTON') return;
+      lb.dragging = true;
+      lb.dragSX = e.clientX; lb.dragSY = e.clientY;
+      lb.dragOX = lb.panX; lb.dragOY = lb.panY;
+      stage.classList.add('lb-panning');
     });
+    window.addEventListener('mousemove', function (e) {
+      if (!lb.dragging) return;
+      lb.panX = lb.dragOX + (e.clientX - lb.dragSX);
+      lb.panY = lb.dragOY + (e.clientY - lb.dragSY);
+      applyZoomTransform();
+    });
+    window.addEventListener('mouseup', function () { lb.dragging = false; stage.classList.remove('lb-panning'); });
+    stage.addEventListener('dblclick', function () { toggleZoomKey(); });
 
     document.getElementById('taskbar-board-btn').addEventListener('click', openBoard);
     document.getElementById('board-modal-close').addEventListener('click', closeBoard);
@@ -742,10 +822,17 @@
     document.addEventListener('keydown', function (e) {
       var typing = /INPUT|TEXTAREA/.test(document.activeElement.tagName);
       if (document.getElementById('lightbox').classList.contains('open')) {
-        if (e.key === 'Escape') closeLightbox();
-        if (e.key === 'ArrowLeft') lbStep(-1);
-        if (e.key === 'ArrowRight') lbStep(1);
-        if (e.key === 'f' || e.key === 'F') document.getElementById('lb-fullscreen-btn').click();
+        // Escape always closes (and drops fullscreen with it, see closeLightbox)
+        if (e.key === 'Escape') { closeLightbox(); return; }
+        // N / P / arrows — navigate
+        if (e.key === 'n' || e.key === 'N' || e.key === 'ArrowRight') { lbStep(1); return; }
+        if (e.key === 'p' || e.key === 'P' || e.key === 'ArrowLeft') { lbStep(-1); return; }
+        // Z — cycle zoom (fit -> 2x -> 4x -> fit)
+        if (e.key === 'z' || e.key === 'Z') { e.preventDefault(); toggleZoomKey(); return; }
+        // F — force fullscreen in/out (image or video, minimal-chrome mode)
+        if (e.key === 'f' || e.key === 'F') { e.preventDefault(); toggleForceFullscreen(); return; }
+        // Tab — pause/resume the current video, without shifting page focus
+        if (e.key === 'Tab') { e.preventDefault(); lbTogglePlay(); return; }
         return;
       }
       if (typing) return;
