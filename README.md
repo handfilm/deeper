@@ -90,9 +90,40 @@ request.
 - `generate-manifest.js` — kept for reference only; not used by the
   current Drive-driven build.
 
+## Mobile / next-level gallery features (this pass)
+
+- **Tap command dock** — on screens ≤900px, the lightbox gets a floating
+  bottom dock (‹ prev · zoom− · fullscreen · zoom+ · next ›) so every
+  action that used to be keyboard-only (Z zoom, N/P nav, F fullscreen)
+  now has a real tap target.
+- **Mobile zoom** — pinch-to-zoom with two fingers, double-tap to cycle
+  fit → 2× → 4×, one-finger drag to pan while zoomed.
+- **Swipe gestures** — swipe left/right to move between assets, swipe
+  down to close the lightbox (only when not zoomed in).
+- **Names hidden by default** — thumbnail titles are invisible until you
+  hover (desktop) or tap-and-hold (mobile). Each window has an
+  **ⓘ INFO** toggle in its toolbar to switch names on permanently for
+  that session; the choice is remembered for next time.
+- **Hover preview, everywhere** — desktop keeps mouse-hover
+  scale/scrub-preview; touch devices get the same effect on
+  touch-and-drag (scrubs video position with your finger) plus a
+  scroll-triggered reveal-in animation as cards enter view.
+- **⚡ Speed toggle** — cycles preview playback rate (1×/1.5×/2×/3×) for
+  fast-browsing large tag folders; applies to hover preview and
+  autoplay-in-view alike.
+- **Video autoplay** — grid videos autoplay (muted, looped) the moment
+  they scroll into view, on both desktop and mobile, via
+  IntersectionObserver.
+- **▶ AUTO slideshow** — auto-advances through the current filtered set
+  every ~4s inside the lightbox; toggle in the lightbox header.
+- **"RAWX — DEEPER" branding** — a huge, low-opacity brutalist wordmark
+  sits behind the floating windows on the desktop surface.
+
 ## Next steps you can build on top of this
 
 - Right-click context menu on asset cards (open, pin, copy link)
 - Drag-and-drop assets between windows onto the Board
 - A "search across all open windows" bar in the top bar
 - Persist window positions/sizes to `localStorage` between visits
+- Web Share API button in the lightbox for one-tap sharing to socials
+- Masonry (variable aspect-ratio) grid mode as an alternative to the S/M/L card grid
