@@ -258,6 +258,35 @@ button, input, select, textarea{ font-family: var(--font-mono); }
 .lb-meta-row{ display: flex; justify-content: space-between; font-size: 11px; letter-spacing: 0.06em; color: var(--steel-dim); padding: 5px 0; }
 .lb-meta-row b{ color: var(--white); }
 
+/* ---------------- Zoom / pan / force-fullscreen ---------------- */
+.lb-media{ overflow: hidden; cursor: zoom-in; touch-action: none; }
+.lb-media img, .lb-media video{ transition: transform .06s linear; transform-origin: center center; will-change: transform; }
+.lb-media img.lb-zoomed{ cursor: grab; }
+.lb-media.lb-panning, .lb-media.lb-panning img{ cursor: grabbing !important; }
+
+.lb-zoom-hint{
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: .05em; color: var(--red);
+  min-width: 34px; text-align: right;
+}
+.lb-key-legend{
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: .06em; color: var(--steel-dim);
+  display: none; white-space: nowrap;
+}
+@media (min-width: 760px){ .lb-key-legend{ display: inline; } }
+
+/* Native Fullscreen API target */
+.lb-frame:fullscreen{ max-width: none; width: 100vw; height: 100vh; background: var(--void); }
+.lb-frame:-webkit-full-screen{ max-width: none; width: 100vw; height: 100vh; background: var(--void); }
+
+/* When the lightbox is in force-fullscreen mode: strip everything but
+   the media itself and the prev/next nav arrows, per the "pushed with
+   navigation option only" fullscreen behaviour. */
+.lightbox.lb-fullscreen-mode .lb-head,
+.lightbox.lb-fullscreen-mode .lb-meta{ display: none; }
+.lightbox.lb-fullscreen-mode .lb-media{ padding: 0; }
+.lightbox.lb-fullscreen-mode .lb-nav{ opacity: .35; }
+.lightbox.lb-fullscreen-mode .lb-nav:hover{ opacity: 1; }
+
 /* ---------------- Modal / Board ---------------- */
 .modal-overlay{
   display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000;
