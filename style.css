@@ -199,14 +199,25 @@ button, input, select, textarea{ font-family: var(--font-mono); }
 .asset-card{
   background: var(--void); position: relative; cursor: pointer; overflow: hidden; aspect-ratio: 3/4;
 }
-.asset-card video, .asset-card img{ width: 100%; height: 100%; object-fit: cover; transition: transform 0.25s ease; }
-.asset-card:hover video, .asset-card:hover img{ transform: scale(1.04); }
+.asset-card video, .asset-card img{ width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s cubic-bezier(.16,1,.3,1), filter 0.3s ease; }
+.asset-card:hover video, .asset-card:hover img,
+.asset-card.card-active video, .asset-card.card-active img{ transform: scale(1.06); filter: brightness(1.08); }
+/* Reveal-in animation as cards enter view (mobile "hover" preview substitute) */
+.asset-card{ opacity: 0; transform: translateY(10px) scale(.98); transition: opacity .4s ease, transform .4s cubic-bezier(.16,1,.3,1); }
+.asset-card.card-in-view{ opacity: 1; transform: translateY(0) scale(1); }
+/* Names hidden by default everywhere — surfaced only on hover/press or when
+   the INFO toggle is switched on for a window/grid. */
 .asset-card-label{
   position: absolute; left: 0; right: 0; bottom: 0;
   font-size: 10px; letter-spacing: 0.06em; color: var(--white);
   background: linear-gradient(0deg, rgba(0,0,0,0.9), transparent);
   padding: 20px 10px 8px; display: flex; justify-content: space-between; gap: 6px;
+  opacity: 0; transform: translateY(4px); pointer-events: none;
+  transition: opacity .18s ease, transform .18s ease;
 }
+.asset-card:hover .asset-card-label,
+.asset-card.card-active .asset-card-label,
+.labels-on .asset-card-label{ opacity: 1; transform: translateY(0); }
 .asset-card-kind{ color: var(--red); }
 .asset-card-pin{
   position: absolute; top: 8px; right: 8px; width: 26px; height: 26px;
@@ -273,6 +284,22 @@ button, input, select, textarea{ font-family: var(--font-mono); }
   display: none; white-space: nowrap;
 }
 @media (min-width: 760px){ .lb-key-legend{ display: inline; } }
+
+#lb-auto-btn.active{ border-color: var(--red); color: var(--red); background: rgba(255,0,0,0.08); }
+
+/* ---------------- Mobile tap command dock ---------------- */
+.lb-mobile-dock{
+  display: none; position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%);
+  gap: 8px; background: rgba(0,0,0,0.72); border: 1px solid var(--panel-line);
+  padding: 6px; z-index: 6; backdrop-filter: blur(3px);
+}
+.lb-dock-btn{
+  width: 44px; height: 44px; background: transparent; border: 1px solid var(--panel-line);
+  color: var(--white); font-size: 17px; line-height: 1; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.lb-dock-btn:active{ border-color: var(--red); color: var(--red); background: rgba(255,0,0,0.1); }
+.lb-dock-fs{ font-size: 15px; }
 
 /* Native Fullscreen API target */
 .lb-frame:fullscreen{ max-width: none; width: 100vw; height: 100vh; background: var(--void); }
@@ -343,6 +370,16 @@ button, input, select, textarea{ font-family: var(--font-mono); }
   .asset-grid{ margin-right: 0; padding-right: 16px; }
   .lb-nav{ display: none; }
   .board-thumbs{ grid-template-columns: repeat(3, 1fr); }
+
+  /* All lightbox commands become tap targets on mobile */
+  .lb-mobile-dock{ display: flex; }
+  .lb-media{ padding: 10px 10px 74px; }
+  .lb-icon-btn{ padding: 10px 12px; font-size: 12px; }
+  .lb-head{ flex-wrap: wrap; gap: 8px; row-gap: 6px; }
+  .lb-head-actions{ flex-wrap: wrap; gap: 6px; }
+  #lb-auto-btn{ order: -1; }
+  .asset-card{ opacity: 1; transform: none; } /* skip reveal-in on touch grids, keep it snappy */
+  .asset-card-pin{ opacity: 1; width: 30px; height: 30px; font-size: 15px; } /* hover never fires on touch */
 }
 @media (max-width: 560px){
   .pillar-strip{ grid-template-columns: 1fr; }
