@@ -53,18 +53,20 @@
 
 <!-- ================= LIGHTBOX ================= -->
 <div class="lightbox" id="lightbox" aria-hidden="true">
-  <div class="lb-frame">
+  <div class="lb-frame" id="lb-frame">
     <div class="lb-head">
       <span id="lb-title">ASSET</span>
       <div class="lb-head-actions">
-        <button id="lb-fullscreen-btn" class="lb-icon-btn" title="Fullscreen" hidden>⛶ FULLSCREEN</button>
+        <span id="lb-zoom-hint" class="lb-zoom-hint"></span>
+        <span class="lb-key-legend">Z ZOOM · N/P NAV · TAB PAUSE · F FULLSCREEN</span>
+        <button id="lb-fullscreen-btn" class="lb-icon-btn" title="Force fullscreen (F)">⛶ FULLSCREEN</button>
         <button id="lb-pin-btn" class="lb-icon-btn" title="Pin to board">PIN</button>
         <button id="lb-close" class="lb-icon-btn lb-close" title="Close">✕</button>
       </div>
     </div>
-    <button class="lb-nav lb-prev" id="lb-prev" title="Previous">‹</button>
+    <button class="lb-nav lb-prev" id="lb-prev" title="Previous (P)">‹</button>
     <div class="lb-media" id="lb-media"></div>
-    <button class="lb-nav lb-next" id="lb-next" title="Next">›</button>
+    <button class="lb-nav lb-next" id="lb-next" title="Next (N)">›</button>
     <div class="lb-meta">
       <div class="lb-meta-row"><span>ITEM</span><b id="lb-character">—</b></div>
       <div class="lb-meta-row"><span>LOCATION</span><b id="lb-pillar">—</b></div>
