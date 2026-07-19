@@ -25,6 +25,11 @@ ROOT FOLDER                <- put its ID in app.js: CONFIG.driveRootFolderId
   window opened for it.
 - **Tag subfolder name** → the chip/card shown when you open a category,
   and the label on every asset inside it.
+- **No Tag subfolders?** If a Category folder has no subfolders at all —
+  just files sitting directly inside it (e.g. a raw video-export dump
+  like "VLC records") — the app auto-detects that and opens the Category
+  itself as a flat, single gallery. No Tag layer required for
+  "just dump everything here" folders.
 - Filenames can be anything — the display title is just the filename,
   title-cased, extension stripped. The old `<kind>-<slug>.ext` naming
   convention is no longer required.
