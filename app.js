@@ -371,7 +371,14 @@
     getTags(w.catId).then(function (tags) {
       if (!WM.windows[w.id]) return; // window closed meanwhile
       if (!tags.length) {
-        body.innerHTML = '<div class="tagpicker-empty">NO TAG SUBFOLDERS FOUND IN "' + w.catName.toUpperCase() + '"</div>';
+        // No Tag subfolders inside this Category — treat the Category itself
+        // as a flat, single-tag gallery so "just dump files here" folders
+        // (e.g. a raw video-export folder) work without extra nesting.
+        w.tagId = w.catId;
+        w.tagName = null;
+        w.flatCategory = true;
+        w.visibleCount = 30;
+        renderWindowBody(w);
         return;
       }
       var wrap = el('div', 'tagpicker');
@@ -398,7 +405,7 @@
   function renderGallery(w, body) {
     body.innerHTML =
       '<div class="win-toolbar">' +
-        '<button class="win-back" title="Back to tags">\u2190 TAGS</button>' +
+        '<button class="win-back"' + (w.flatCategory ? ' hidden' : '') + ' title="Back to tags">\u2190 TAGS</button>' +
         '<input type="search" class="win-search" placeholder="SEARCH" autocomplete="off" value="' + escapeAttr(w.search) + '">' +
         '<select class="win-sort">' +
           '<option value="default">SORT: DEFAULT</option>' +
@@ -551,7 +558,7 @@
       media = '<img src="' + p.src + '" alt="' + escapeAttr(p.title) + '" loading="lazy">';
     }
     card.innerHTML = media +
-      '<div class="asset-card-label"><span>' + escapeHtml(p.title) + '</span><span class="asset-card-kind">' + escapeHtml(w.tagName || '') + '</span></div>' +
+      '<div class="asset-card-label"><span>' + escapeHtml(p.title) + '</span><span class="asset-card-kind">' + escapeHtml(w.tagName || w.catName || '') + '</span></div>' +
       '<button class="asset-card-pin' + (isPinned(p) ? ' pinned' : '') + '" title="Pin">' + (isPinned(p) ? '\u2713' : '+') + '</button>';
 
     if (p.isVideo) {
