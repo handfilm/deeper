@@ -202,6 +202,8 @@
       search: '',
       sort: 'default',
       gridSize: loadGridSizePref(),
+      showLabels: loadLabelsPref(),
+      speed: loadSpeedPref(),
       visibleCount: 30,
       shuffleSeed: {}
     };
@@ -218,6 +220,7 @@
     if (!w) return;
     if (w.observer) w.observer.disconnect();
     if (w.scrollObserver) w.scrollObserver.disconnect();
+    if (w.revealObserver) w.revealObserver.disconnect();
     if (w.dom) w.dom.remove();
     delete WM.windows[id];
     renderTaskbar();
@@ -354,6 +357,7 @@
     var body = qs('.win-body', w.dom);
     if (w.observer) { w.observer.disconnect(); w.observer = null; }
     if (w.scrollObserver) { w.scrollObserver.disconnect(); w.scrollObserver = null; }
+    if (w.revealObserver) { w.revealObserver.disconnect(); w.revealObserver = null; }
 
     if (!w.tagId) {
       renderTagPicker(w, body);
@@ -405,9 +409,11 @@
         '<div class="win-size-toggle">' +
           '<button data-size="s">S</button><button data-size="m">M</button><button data-size="l">L</button>' +
         '</div>' +
+        '<button class="win-chip-btn win-labels-btn' + (w.showLabels ? ' active' : '') + '" title="Show names on thumbnails">ⓘ INFO</button>' +
+        '<button class="win-chip-btn win-speed-btn" title="Cycle preview playback speed">\u26a1 ' + w.speed + '\u00d7</button>' +
       '</div>' +
       '<div class="win-count">\u2014</div>' +
-      '<div class="win-grid grid-size-' + w.gridSize + '"></div>' +
+      '<div class="win-grid grid-size-' + w.gridSize + (w.showLabels ? ' labels-on' : '') + '"></div>' +
       '<div class="win-loadmore" hidden>LOAD MORE</div>' +
       '<div class="win-end" hidden>END OF GALLERY</div>';
 
@@ -435,6 +441,19 @@
     });
     qs('.win-loadmore', body).addEventListener('click', function () {
       loadMoreForWindow(w);
+    });
+
+    qs('.win-labels-btn', body).addEventListener('click', function () {
+      w.showLabels = !w.showLabels;
+      saveLabelsPref(w.showLabels);
+      this.classList.toggle('active', w.showLabels);
+      qs('.win-grid', body).classList.toggle('labels-on', w.showLabels);
+    });
+    qs('.win-speed-btn', body).addEventListener('click', function () {
+      w.speed = nextSpeed(w.speed);
+      saveSpeedPref(w.speed);
+      this.textContent = '\u26a1 ' + w.speed + '\u00d7';
+      qsa('.win-grid video', body).forEach(function (v) { v.playbackRate = w.speed; });
     });
 
     ensurePageThenPaint(w);
@@ -539,11 +558,12 @@
       var v = qs('video', card);
       var durEl = qs('.asset-card-duration', card);
       var bar = qs('.asset-card-progress span', card);
+      v.playbackRate = w.speed || 1;
       v.addEventListener('loadedmetadata', function () {
         if (isFinite(v.duration)) { durEl.hidden = false; durEl.textContent = formatDuration(v.duration); }
       });
       v.addEventListener('timeupdate', function () { if (v.duration) bar.style.width = (v.currentTime / v.duration * 100) + '%'; });
-      card.addEventListener('mouseenter', function () { v.play().catch(function () {}); });
+      card.addEventListener('mouseenter', function () { v.playbackRate = w.speed || 1; v.play().catch(function () {}); });
       card.addEventListener('mouseleave', function () { v.pause(); });
       card.addEventListener('mousemove', function (e) {
         if (!v.duration) return;
@@ -552,6 +572,28 @@
         v.currentTime = pct * v.duration;
       });
     }
+
+    // Touch: mouseenter/mousemove never fire on touch devices, so replicate
+    // the hover-preview (scale + name reveal + scrub) with real touch events.
+    var touchScrubbing = false;
+    card.addEventListener('touchstart', function (e) {
+      card.classList.add('card-active');
+      if (p.isVideo) { var vid = qs('video', card); if (vid) { vid.playbackRate = w.speed || 1; vid.play().catch(function () {}); } }
+      touchScrubbing = true;
+    }, { passive: true });
+    card.addEventListener('touchmove', function (e) {
+      if (!touchScrubbing || !p.isVideo) return;
+      var vid = qs('video', card);
+      if (!vid || !vid.duration) return;
+      var t = e.touches[0];
+      var rect = card.getBoundingClientRect();
+      var pct = Math.min(Math.max((t.clientX - rect.left) / rect.width, 0), 1);
+      vid.currentTime = pct * vid.duration;
+    }, { passive: true });
+    card.addEventListener('touchend', function () {
+      touchScrubbing = false;
+      setTimeout(function () { card.classList.remove('card-active'); }, 900);
+    });
 
     qs('.asset-card-pin', card).addEventListener('click', function (e) {
       e.stopPropagation();
@@ -579,20 +621,48 @@
     if (videos.length && typeof IntersectionObserver !== 'undefined') {
       w.observer = new IntersectionObserver(function (entries) {
         entries.forEach(function (entry) {
-          if (entry.isIntersecting) entry.target.play().catch(function () {});
+          if (entry.isIntersecting) { entry.target.playbackRate = w.speed || 1; entry.target.play().catch(function () {}); }
           else entry.target.pause();
         });
       }, { root: body, rootMargin: '150px 0px', threshold: 0.15 });
       videos.forEach(function (v) { w.observer.observe(v); });
+    }
+
+    // Reveal-in animation for every card (image or video) as it scrolls
+    // into view — the mobile substitute for a mouse-hover preview.
+    if (w.revealObserver) { w.revealObserver.disconnect(); w.revealObserver = null; }
+    var cards = qsa('.win-grid .asset-card', body);
+    if (cards.length && typeof IntersectionObserver !== 'undefined') {
+      w.revealObserver = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) { entry.target.classList.add('card-in-view'); w.revealObserver.unobserve(entry.target); }
+        });
+      }, { root: body, rootMargin: '80px 0px', threshold: 0.05 });
+      cards.forEach(function (c) { w.revealObserver.observe(c); });
+    } else {
+      cards.forEach(function (c) { c.classList.add('card-in-view'); });
     }
   }
 
   function escapeHtml(s) { return String(s).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); }
   function escapeAttr(s) { return escapeHtml(s); }
 
-  /* ---------------- Grid size preference ---------------- */
+  /* ---------------- Grid size / labels / speed preferences ---------------- */
   function loadGridSizePref() { try { return localStorage.getItem('rawx_grid_size') || 'm'; } catch (e) { return 'm'; } }
   function saveGridSizePref(size) { try { localStorage.setItem('rawx_grid_size', size); } catch (e) {} }
+
+  // Names are OFF by default everywhere — nobody asked to see them.
+  function loadLabelsPref() { try { return localStorage.getItem('rawx_labels_on') === '1'; } catch (e) { return false; } }
+  function saveLabelsPref(on) { try { localStorage.setItem('rawx_labels_on', on ? '1' : '0'); } catch (e) {} }
+
+  // Fast speed view — cycles hover/autoplay preview playback rate.
+  var SPEED_STEPS = [1, 1.5, 2, 3];
+  function loadSpeedPref() {
+    try { var v = parseFloat(localStorage.getItem('rawx_speed')); return SPEED_STEPS.indexOf(v) !== -1 ? v : 1; }
+    catch (e) { return 1; }
+  }
+  function saveSpeedPref(v) { try { localStorage.setItem('rawx_speed', String(v)); } catch (e) {} }
+  function nextSpeed(v) { var i = SPEED_STEPS.indexOf(v); return SPEED_STEPS[(i + 1) % SPEED_STEPS.length]; }
 
   /* ---------------- Taskbar ---------------- */
   function renderTaskbar() {
@@ -634,7 +704,26 @@
 
   /* ---------------- Lightbox (global, shared) ---------------- */
   var ZOOM_MAX = 6, ZOOM_MIN = 1;
-  var lb = { win: null, index: -1, zoom: 1, panX: 0, panY: 0, dragging: false, dragSX: 0, dragSY: 0, dragOX: 0, dragOY: 0 };
+  var lb = { win: null, index: -1, zoom: 1, panX: 0, panY: 0, dragging: false, dragSX: 0, dragSY: 0, dragOX: 0, dragOY: 0, autoOn: false, autoTimer: null };
+
+  function stopAuto() {
+    lb.autoOn = false;
+    if (lb.autoTimer) clearTimeout(lb.autoTimer);
+    lb.autoTimer = null;
+    var btn = document.getElementById('lb-auto-btn');
+    if (btn) { btn.classList.remove('active'); btn.textContent = '\u25b6 AUTO'; }
+  }
+  function scheduleAuto() {
+    if (!lb.autoOn) return;
+    if (lb.autoTimer) clearTimeout(lb.autoTimer);
+    lb.autoTimer = setTimeout(function () { lbStep(1); }, 4200);
+  }
+  function toggleAuto() {
+    lb.autoOn = !lb.autoOn;
+    var btn = document.getElementById('lb-auto-btn');
+    if (btn) { btn.classList.toggle('active', lb.autoOn); btn.textContent = lb.autoOn ? '\u25a0 AUTO' : '\u25b6 AUTO'; }
+    if (lb.autoOn) scheduleAuto(); else stopAuto();
+  }
 
   function openLightbox(w, fileId) {
     lb.win = w;
@@ -696,6 +785,7 @@
   }
 
   function closeLightbox() {
+    stopAuto();
     if (document.fullscreenElement) document.exitFullscreen().catch(function () {});
     document.getElementById('lightbox').classList.remove('open');
     document.getElementById('lightbox').setAttribute('aria-hidden', 'true');
@@ -707,6 +797,7 @@
     if (!lb.win || !lb.win.filtered.length) return;
     lb.index = (lb.index + dir + lb.win.filtered.length) % lb.win.filtered.length;
     renderLightbox();
+    scheduleAuto();
   }
 
   function lbTogglePlay() {
@@ -768,6 +859,14 @@
     });
     document.getElementById('lightbox').addEventListener('click', function (e) { if (e.target.id === 'lightbox') closeLightbox(); });
     document.getElementById('lb-fullscreen-btn').addEventListener('click', toggleForceFullscreen);
+    document.getElementById('lb-auto-btn').addEventListener('click', toggleAuto);
+
+    // ---- Mobile tap dock: every command gets a real button, no keyboard needed ----
+    document.getElementById('lb-dock-prev').addEventListener('click', function () { lbStep(-1); });
+    document.getElementById('lb-dock-next').addEventListener('click', function () { lbStep(1); });
+    document.getElementById('lb-dock-zoomin').addEventListener('click', function () { setZoom(lb.zoom + 1); });
+    document.getElementById('lb-dock-zoomout').addEventListener('click', function () { lb.zoom - 1 <= 1 ? resetZoom() : setZoom(lb.zoom - 1); });
+    document.getElementById('lb-dock-fullscreen').addEventListener('click', toggleForceFullscreen);
 
     // ---- Zoom: wheel to zoom in/out around the cursor, drag to pan while zoomed ----
     var stage = document.getElementById('lb-media');
@@ -794,6 +893,49 @@
     });
     window.addEventListener('mouseup', function () { lb.dragging = false; stage.classList.remove('lb-panning'); });
     stage.addEventListener('dblclick', function () { toggleZoomKey(); });
+
+    // ---- Touch: pinch-to-zoom, single-finger swipe nav / swipe-down-to-close, double-tap zoom ----
+    var touch = { mode: null, startDist: 0, startZoom: 1, sx: 0, sy: 0, panOX: 0, panOY: 0, lastTap: 0 };
+    function touchDist(t0, t1) { return Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY); }
+
+    stage.addEventListener('touchstart', function (e) {
+      if (e.touches.length === 2) {
+        touch.mode = 'pinch';
+        touch.startDist = touchDist(e.touches[0], e.touches[1]);
+        touch.startZoom = lb.zoom;
+      } else if (e.touches.length === 1) {
+        var now = Date.now();
+        if (now - touch.lastTap < 300) { toggleZoomKey(); touch.mode = null; touch.lastTap = 0; return; }
+        touch.lastTap = now;
+        touch.mode = lb.zoom > 1 ? 'pan' : 'swipe';
+        touch.sx = e.touches[0].clientX; touch.sy = e.touches[0].clientY;
+        touch.panOX = lb.panX; touch.panOY = lb.panY;
+      }
+    }, { passive: true });
+
+    stage.addEventListener('touchmove', function (e) {
+      if (touch.mode === 'pinch' && e.touches.length === 2) {
+        e.preventDefault();
+        var dist = touchDist(e.touches[0], e.touches[1]);
+        setZoom(touch.startZoom * (dist / touch.startDist));
+      } else if (touch.mode === 'pan' && e.touches.length === 1) {
+        e.preventDefault();
+        lb.panX = touch.panOX + (e.touches[0].clientX - touch.sx);
+        lb.panY = touch.panOY + (e.touches[0].clientY - touch.sy);
+        applyZoomTransform();
+      }
+      // 'swipe' mode: let the finger move freely, decide the gesture on touchend
+    }, { passive: false });
+
+    stage.addEventListener('touchend', function (e) {
+      if (touch.mode === 'swipe' && e.changedTouches.length === 1) {
+        var dx = e.changedTouches[0].clientX - touch.sx;
+        var dy = e.changedTouches[0].clientY - touch.sy;
+        if (Math.abs(dy) > 80 && Math.abs(dy) > Math.abs(dx)) { closeLightbox(); }
+        else if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)) { lbStep(dx < 0 ? 1 : -1); }
+      }
+      touch.mode = null;
+    });
 
     document.getElementById('taskbar-board-btn').addEventListener('click', openBoard);
     document.getElementById('board-modal-close').addEventListener('click', closeBoard);
