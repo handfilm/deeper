@@ -1,0 +1,208 @@
+/* ============================================================
+   RAWX MOTION LAB — DESKTOP OS SHELL
+   Sits on top of style.css. Adds: top category-tab bar, floating
+   draggable/resizable windows, bottom taskbar, tag picker, and the
+   per-window asset grid (reuses .asset-card etc. from style.css).
+============================================================ */
+
+html, body { height: 100%; }
+body { overflow: hidden; }
+
+/* ---------------- Top bar ---------------- */
+.os-topbar{
+  position: fixed; top: 0; left: 0; right: 0; height: 56px; z-index: 100;
+  display: flex; align-items: center; gap: 18px;
+  background: var(--panel); border-bottom: 1px solid var(--panel-line);
+  padding: 0 16px;
+}
+.os-logo{ display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.os-logo-mark{
+  font-family: var(--font-display); font-weight: 700; font-size: 15px;
+  color: var(--red); border: 1px solid var(--red); padding: 2px 6px;
+}
+.os-logo-full{ font-size: 10px; letter-spacing: .12em; color: var(--steel-dim); display: none; }
+@media (min-width: 720px){ .os-logo-full{ display: inline; } }
+
+.cat-tabs{ display: flex; gap: 4px; overflow-x: auto; flex: 1; scrollbar-width: none; }
+.cat-tabs::-webkit-scrollbar{ display: none; }
+.cat-tab{
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em;
+  background: transparent; color: var(--steel-dim); border: 1px solid var(--panel-line);
+  padding: 8px 14px; white-space: nowrap; cursor: pointer; transition: all .15s ease;
+}
+.cat-tab:hover{ color: var(--white); border-color: var(--red); }
+
+.os-topbar-stats{
+  display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+  font-size: 10px; letter-spacing: .1em; color: var(--steel-dim);
+}
+.status-dot{ width: 6px; height: 6px; border-radius: 50%; background: var(--red); display: inline-block; animation: pulse 1.6s infinite; }
+@keyframes pulse{ 0%,100%{ opacity: 1; } 50%{ opacity: .3; } }
+.os-topbar-stats b{ color: var(--white); font-weight: 700; }
+
+/* ---------------- Desktop surface ---------------- */
+.os-desktop{
+  position: fixed; top: 56px; left: 0; right: 0; bottom: 44px;
+  overflow: auto;
+  background:
+    linear-gradient(var(--panel-line) 1px, transparent 1px) 0 0/40px 40px,
+    linear-gradient(90deg, var(--panel-line) 1px, transparent 1px) 0 0/40px 40px,
+    var(--void);
+  background-blend-mode: normal;
+}
+
+/* ---------------- Windows ---------------- */
+.win{
+  position: absolute;
+  background: var(--panel);
+  border: 1px solid var(--panel-line);
+  box-shadow: 6px 6px 0 rgba(255,0,0,.15);
+  display: flex; flex-direction: column;
+  min-width: 360px; min-height: 280px;
+}
+.win.win-focused{ border-color: var(--red); box-shadow: 8px 8px 0 rgba(255,0,0,.28); }
+.win.win-minimized{ display: none; }
+.win.win-maximized{
+  left: 0 !important; top: 0 !important;
+  width: 100% !important; height: 100% !important;
+}
+
+.win-titlebar{
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--panel-2); border-bottom: 1px solid var(--panel-line);
+  padding: 0 8px 0 12px; height: 34px; flex-shrink: 0; cursor: move;
+}
+.win-crumb{ font-size: 11px; letter-spacing: .08em; color: var(--white); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.crumb-cat{ color: var(--white); }
+.crumb-sep{ color: var(--steel-dim); margin: 0 4px; }
+.crumb-tag{ color: var(--red); }
+.win-controls{ display: flex; gap: 4px; flex-shrink: 0; }
+.win-btn{
+  width: 22px; height: 22px; background: transparent; color: var(--steel-dim);
+  border: 1px solid var(--panel-line); font-size: 11px; cursor: pointer; line-height: 1;
+}
+.win-btn:hover{ color: var(--white); border-color: var(--red); }
+.win-btn.win-close:hover{ background: var(--red); color: var(--void); }
+
+.win-body{ flex: 1; overflow: auto; padding: 14px; position: relative; }
+.win-resize{
+  position: absolute; right: 0; bottom: 0; width: 16px; height: 16px;
+  cursor: nwse-resize;
+  background: repeating-linear-gradient(135deg, var(--panel-line) 0 2px, transparent 2px 5px);
+}
+
+/* ---------------- Tag picker (inside a window) ---------------- */
+.tagpicker-loading, .tagpicker-empty{ font-size: 11px; letter-spacing: .08em; color: var(--steel-dim); padding: 20px 4px; }
+.tagpicker-hint{ font-size: 10px; letter-spacing: .1em; color: var(--steel-dim); margin-bottom: 12px; }
+.tagpicker-grid{ display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
+.tag-card{
+  display: flex; align-items: center; justify-content: space-between;
+  border: 1px solid var(--panel-line); padding: 12px 14px; cursor: pointer;
+  transition: all .15s ease; background: var(--panel-2);
+}
+.tag-card:hover{ border-color: var(--red); }
+.tag-card-name{ font-size: 12px; letter-spacing: .05em; color: var(--white); }
+.tag-card-go{ color: var(--red); opacity: 0; transition: opacity .15s ease; }
+.tag-card:hover .tag-card-go{ opacity: 1; }
+
+/* ---------------- Per-window gallery toolbar ---------------- */
+.win-toolbar{ display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.win-back{
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: .08em;
+  background: transparent; color: var(--steel-dim); border: 1px solid var(--panel-line);
+  padding: 6px 10px; cursor: pointer;
+}
+.win-back:hover{ color: var(--white); border-color: var(--red); }
+.win-search{
+  flex: 1; min-width: 100px; background: var(--void); border: 1px solid var(--panel-line);
+  color: var(--white); font-size: 11px; padding: 6px 8px;
+}
+.win-search:focus{ outline: none; border-color: var(--red); }
+.win-sort{
+  background: var(--void); border: 1px solid var(--panel-line); color: var(--white);
+  font-size: 10px; padding: 6px 6px;
+}
+.win-size-toggle{ display: inline-flex; border: 1px solid var(--panel-line); }
+.win-size-toggle button{
+  background: transparent; color: var(--steel-dim); border: none; border-right: 1px solid var(--panel-line);
+  font-size: 10px; padding: 6px 9px; cursor: pointer;
+}
+.win-size-toggle button:last-child{ border-right: none; }
+.win-size-toggle button.active{ color: var(--white); background: rgba(255,255,255,.08); }
+
+.win-count{ font-size: 10px; letter-spacing: .08em; color: var(--steel-dim); margin-bottom: 10px; }
+.win-empty{ font-size: 11px; letter-spacing: .06em; color: var(--steel-dim); padding: 30px 4px; text-align: center; }
+
+.win-grid{ display: grid; gap: .75rem; }
+.win-grid.grid-size-s{ grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: .5rem; }
+.win-grid.grid-size-m{ grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: .75rem; }
+.win-grid.grid-size-l{ grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; }
+
+.win-grid .asset-card{ position: relative; overflow: hidden; cursor: pointer; aspect-ratio: 3/4; }
+.win-grid .asset-card video, .win-grid .asset-card img{ width: 100%; height: 100%; object-fit: cover; display: block; }
+.asset-card-duration{
+  position: absolute; right: .4rem; bottom: .5rem; font-family: var(--font-mono); font-size: .62rem;
+  background: rgba(0,0,0,.7); color: #fff; padding: .12rem .35rem; z-index: 2; pointer-events: none;
+}
+.asset-card-progress{ position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: rgba(255,255,255,.15); z-index: 2; }
+.asset-card-progress span{ display: block; height: 100%; width: 0%; background: var(--red); transition: width .1s linear; }
+.asset-card-play{ position: absolute; top: .4rem; right: .4rem; z-index: 2; font-size: .6rem; opacity: .8; pointer-events: none; color: #fff; }
+
+.win-loadmore{
+  margin-top: 12px; width: 100%; padding: 10px; text-align: center;
+  font-size: 10px; letter-spacing: .1em; color: var(--steel-dim);
+  border: 1px dashed var(--panel-line); cursor: pointer; background: transparent;
+}
+.win-loadmore:hover{ color: var(--white); border-color: var(--red); }
+.win-end{ margin-top: 12px; text-align: center; font-size: 10px; letter-spacing: .1em; color: var(--steel-dim); }
+
+/* ---------------- Taskbar ---------------- */
+.os-taskbar{
+  position: fixed; left: 0; right: 0; bottom: 0; height: 44px; z-index: 100;
+  display: flex; align-items: center; gap: 10px;
+  background: var(--panel); border-top: 1px solid var(--panel-line);
+  padding: 0 12px;
+}
+.taskbar-launcher-wrap{ position: relative; flex-shrink: 0; }
+.taskbar-launcher-btn{
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: .08em; font-weight: 700;
+  background: var(--red); color: var(--void); border: none; padding: 8px 12px; cursor: pointer;
+}
+.taskbar-launcher-btn:hover{ background: var(--white); }
+.launcher-menu{
+  display: none; position: absolute; bottom: 40px; left: 0; min-width: 200px;
+  background: var(--panel-2); border: 1px solid var(--red); flex-direction: column; z-index: 200;
+}
+.launcher-menu.open{ display: flex; }
+.launcher-item{
+  background: transparent; color: var(--white); border: none; border-bottom: 1px solid var(--panel-line);
+  font-family: var(--font-mono); font-size: 11px; text-align: left; padding: 10px 12px; cursor: pointer;
+}
+.launcher-item:last-child{ border-bottom: none; }
+.launcher-item:hover{ background: var(--panel); color: var(--red); }
+
+.taskbar-windows{ flex: 1; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.taskbar-windows::-webkit-scrollbar{ display: none; }
+.taskbar-win-btn{
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: .04em;
+  background: transparent; color: var(--steel-dim); border: 1px solid var(--panel-line);
+  padding: 7px 10px; white-space: nowrap; cursor: pointer; max-width: 220px; overflow: hidden; text-overflow: ellipsis;
+}
+.taskbar-win-btn.active{ color: var(--white); border-color: var(--red); background: rgba(255,0,0,.08); }
+
+.taskbar-right{ display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+.taskbar-board-btn{
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: .08em;
+  background: transparent; color: var(--white); border: 1px solid var(--panel-line); padding: 7px 10px; cursor: pointer;
+}
+.taskbar-board-btn:hover{ border-color: var(--red); color: var(--red); }
+.taskbar-board-btn span{ color: var(--red); margin-left: 4px; font-weight: 700; }
+.taskbar-pinned-stat{ font-size: 10px; letter-spacing: .08em; color: var(--steel-dim); display: none; }
+@media (min-width: 640px){ .taskbar-pinned-stat{ display: inline; } }
+.taskbar-pinned-stat b{ color: var(--white); }
+
+/* ---------------- Mobile fallback ---------------- */
+@media (max-width: 680px){
+  .win{ left: 8px !important; top: 8px !important; width: calc(100% - 16px) !important; height: calc(100% - 16px) !important; }
+  .os-logo-full{ display: none; }
+}

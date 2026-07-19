@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RAWX MOTION LAB — AI Character Consistency Experiment // HANDFILM</title>
+<meta name="description" content="Thousands of character-consistent AI motion clips for lingerie & activewear. A HANDFILM production.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="desktop.css">
+</head>
+<body>
+
+<div id="boot" class="boot">
+  <div class="boot-line">RAWX MOTION LAB // HANDFILM</div>
+  <div class="boot-line boot-sub" id="boot-status">READING CATEGORY FOLDERS…</div>
+  <div class="boot-bar"><span id="boot-bar-fill"></span></div>
+</div>
+
+<!-- ================= TOP BAR (category tabs) ================= -->
+<header class="os-topbar">
+  <div class="os-logo">
+    <span class="os-logo-mark">RX</span>
+    <span class="os-logo-full">RAWX MOTION LAB</span>
+  </div>
+  <nav class="cat-tabs" id="cat-tabs"><!-- category tab buttons injected here --></nav>
+  <div class="os-topbar-stats">
+    <span class="status-dot" id="status-dot"></span>
+    <span id="status-text">SYNCING</span>
+    <b id="stat-total">—</b>
+  </div>
+</header>
+
+<!-- ================= DESKTOP (floating windows live here) ================= -->
+<main class="os-desktop" id="desktop"></main>
+
+<!-- ================= TASKBAR ================= -->
+<footer class="os-taskbar">
+  <div class="taskbar-launcher-wrap">
+    <button class="taskbar-launcher-btn" id="launcher-btn">+ NEW WINDOW</button>
+    <div class="launcher-menu" id="launcher-menu"></div>
+  </div>
+  <div class="taskbar-windows" id="taskbar-windows"></div>
+  <div class="taskbar-right">
+    <button class="taskbar-board-btn" id="taskbar-board-btn">
+      BOARD <span id="taskbar-board-count">0</span>
+    </button>
+    <span class="taskbar-pinned-stat">PINNED <b id="stat-pinned">0</b></span>
+  </div>
+</footer>
+
+<!-- ================= LIGHTBOX ================= -->
+<div class="lightbox" id="lightbox" aria-hidden="true">
+  <div class="lb-frame">
+    <div class="lb-head">
+      <span id="lb-title">ASSET</span>
+      <div class="lb-head-actions">
+        <button id="lb-fullscreen-btn" class="lb-icon-btn" title="Fullscreen" hidden>⛶ FULLSCREEN</button>
+        <button id="lb-pin-btn" class="lb-icon-btn" title="Pin to board">PIN</button>
+        <button id="lb-close" class="lb-icon-btn lb-close" title="Close">✕</button>
+      </div>
+    </div>
+    <button class="lb-nav lb-prev" id="lb-prev" title="Previous">‹</button>
+    <div class="lb-media" id="lb-media"></div>
+    <button class="lb-nav lb-next" id="lb-next" title="Next">›</button>
+    <div class="lb-meta">
+      <div class="lb-meta-row"><span>ITEM</span><b id="lb-character">—</b></div>
+      <div class="lb-meta-row"><span>LOCATION</span><b id="lb-pillar">—</b></div>
+      <div class="lb-meta-row"><span>IN GALLERY</span><b id="lb-set-count">—</b></div>
+      <button class="btn btn-primary btn-block" onclick="window.open('https://handfilm.myshopify.com/', '_blank')">
+        INITIATE B2B INQUIRY <span class="arrow">→</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= B2B TERMINAL / BOARD MODAL ================= -->
+<div class="modal-overlay" id="board-modal-overlay">
+  <div class="modal-box">
+    <div class="modal-head">
+      <span>B2B TERMINAL // BOARD</span>
+      <button id="board-modal-close" class="lb-icon-btn lb-close">✕</button>
+    </div>
+
+    <div class="modal-body" id="modal-body-empty">
+      <p class="modal-empty-text">NO ASSETS PINNED YET.<br>Pin references from any window to build a sourcing board, then submit a structured inquiry.</p>
+    </div>
+
+    <div class="board-thumbs" id="board-thumbs"></div>
+
+    <form class="inquiry-form" id="inquiry-form">
+      <div class="form-row">
+        <label>COMPANY</label>
+        <input type="text" id="inq-company" placeholder="COMPANY NAME" required>
+      </div>
+      <div class="form-row">
+        <label>EMAIL</label>
+        <input type="email" id="inq-email" placeholder="YOU@COMPANY.COM" required>
+      </div>
+      <div class="form-row">
+        <label>NOTES</label>
+        <textarea id="inq-notes" rows="3" placeholder="MOQ, TIMELINE, SIZE RUN, ETC."></textarea>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">
+        SUBMIT INQUIRY <span class="arrow">→</span>
+      </button>
+    </form>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
